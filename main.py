@@ -20,27 +20,48 @@ def turtle_setup():
     t.pen(speed=0, shown=False)
     t.screen.tracer(0, 0)
 
-def draw_task_finished():
-    global paused, current_task, drawing_tasks
-    current_task += 1
-    paused = True
-    if current_task < len(drawing_tasks):
-        draw_task_after_keypress()
+def draw_task_finished(func):
+    def inner1(*args, **kwargs):
+
+        func_to_return = func(*args, **kwargs)
+
+        global paused, current_task, drawing_tasks
+        current_task += 1
+        paused = True
+        if current_task < len(drawing_tasks):
+            draw_task_after_keypress()
+
+        return func_to_return
+    return inner1
 
 def draw_task_after_keypress():
-    global paused, current_task
+    global paused, current_task, t
     if paused:
         turtle.ontimer(draw_task_after_keypress, 100)
     else:
+        t.clear()
         drawing_tasks[current_task]()
+        draw_text()
+
+def draw_text():
+    global t
+
+    t.up()
+    t.pen(pencolor='black')
+    t.setpos(0, screensize[1]/2.5)
+    t.down()
+    t.write('Press LMB to see the next.', font=("Verdana", 15, "normal"), align="center")
+    t.up()
 
 # ---===---
+@draw_task_finished
 def draw_square():
     global t
-    t.clear()
 
-    t.pen(pencolor='red', pensize=1, speed=5, shown=False)
     t.up()
+    t.home()
+    t.pen(pencolor='red', pensize=1)
+    
     square_side = screensize[0] / 4 
 
     t.setpos(t.pos() + (-square_side / 2, -square_side / 2))
@@ -49,13 +70,12 @@ def draw_square():
         t.forward(square_side)
         t.left(90)
     t.up()
-    draw_task_finished()
 
+@draw_task_finished
 def draw_axes():
     global t
-    t.clear()
     
-    t.pen(pencolor='blue', pensize=1, speed=0, shown=False)
+    t.pen(pencolor='blue', pensize=1)
     t.up()
     dot_width = 50
     dotline_size = screensize[0] / 3
@@ -78,13 +98,12 @@ def draw_axes():
         t.forward(offset)
         t.pensize(helpers.lerp(1, 4, (math.sin(i/dot_width) * 5) % 1))
     t.up()
-    draw_task_finished()
 
+@draw_task_finished
 def draw_cartoon():
     global t
-    t.clear()
 
-    t.pen(speed=0, shown=False)
+    t.pen(speed=0)
     t.up()
 
     radius = 50
@@ -105,9 +124,36 @@ def draw_cartoon():
             t.circle(radius)
             t.end_fill()
 
+@draw_task_finished
+def draw_n_figure():
+    global t
 
-drawing_tasks = [draw_square, draw_axes, draw_cartoon]
+    t.up()
+
+    figures_amount = 5
+    circle_distrib_r = 200
+    for i in range(figures_amount):
+        t.up()
+        _color = (random.random(),random.random(), random.random())
+        t.color(_color)
+        angle = math.radians(i * 360 / figures_amount)
+        x = circle_distrib_r*math.cos(angle)
+        y = circle_distrib_r*math.sin(angle)
+
+        t.setpos(x, y)
+        t.down()
+
+        n = random.choice(range(3, 10))
+        for _ in range(n):
+            t.forward(50)
+            t.right(360 / n)
+
+        
+
+drawing_tasks = [draw_square, draw_axes, draw_cartoon, draw_n_figure]
+# drawing_tasks = [draw_n_figure]
 
 turtle_setup()
 drawing_tasks[0]()
+draw_text()
 t.screen.mainloop()
