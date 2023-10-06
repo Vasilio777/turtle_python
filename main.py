@@ -7,7 +7,8 @@ import time
 t = turtle.Turtle()
 screensize = (1280, 720)
 paused = False
-current_task = 0
+curr_task = 0
+next_task = 0
 
 def unpause(fun, btn):
     global paused
@@ -25,29 +26,42 @@ def draw_task_finished(func):
 
         func_to_return = func(*args, **kwargs)
 
-        global paused, current_task, drawing_tasks
-        current_task += 1
+        global paused, next_task, curr_task, drawing_tasks
+        next_task += 1
         paused = True
-        if current_task < len(drawing_tasks):
-            draw_task_after_keypress()
+        if next_task >= len(drawing_tasks):
+            next_task = 0
+
+        draw_task_after_keypress()
+
+        # another var for UI (after a drawing call)
+        if curr_task >= len(drawing_tasks):
+            curr_task = 0
+        curr_task += 1
 
         return func_to_return
     return inner1
 
 def draw_task_after_keypress():
-    global paused, current_task, t
+    global paused, next_task, t
     if paused:
         turtle.ontimer(draw_task_after_keypress, 100)
     else:
         t.clear()
-        drawing_tasks[current_task]()
+        drawing_tasks[next_task]()
         draw_text()
 
 def draw_text():
-    global t
+    global t, curr_task
 
     t.up()
     t.pen(pencolor='black')
+
+    t.setpos(0, screensize[1]/2.3)
+    t.down()
+    t.write(curr_task, font=("Verdana", 18, "normal"), align="center")
+    t.up()
+
     t.setpos(0, screensize[1]/2.5)
     t.down()
     t.write('Press LMB to see the next.', font=("Verdana", 15, "normal"), align="center")
@@ -129,7 +143,8 @@ def draw_n_figure():
     global t
 
     t.up()
-
+    t.pen(pensize=2)
+    
     figures_amount = 5
     circle_distrib_r = 200
     for i in range(figures_amount):
@@ -148,10 +163,50 @@ def draw_n_figure():
             t.forward(50)
             t.right(360 / n)
 
-        
+@draw_task_finished
+def draw_random_walk():
+    global t
 
-drawing_tasks = [draw_square, draw_axes, draw_cartoon, draw_n_figure]
-# drawing_tasks = [draw_n_figure]
+    t.up()
+    t.home()
+    # t.screen.clearscreen()
+    t.pen(speed=9)
+    _color = (random.random(), random.random(), random.random())
+
+    dist = 20
+    edge_x = screensize[0] / 2 - dist*1.1
+    edge_y = screensize[1] / 2 - dist*1.1
+
+    t.down()
+    for i in range(1000):
+        _color = (random.random(), random.random(), random.random())
+        t.pen(pencolor=_color, pensize=random.choice(range(1, 5)))
+        if (-edge_x < t.xcor() < edge_x) and (-edge_y < t.ycor() < edge_y):
+            t.right(random.choice([-90, 0, 90]))
+            t.forward(dist)
+        else:
+            t.right(180)
+            t.forward(dist)
+
+@draw_task_finished
+def draw_spirograph():
+    global t 
+
+    t.up()
+    t.home()
+    t.pen(pensize=1)
+    rad = 100
+    n = 50
+
+    t.down()
+    for i in range(n):
+        t.right(360 / n)
+        _color = (random.random(), random.random(), random.random())
+        t.pen(pencolor=_color)
+        t.circle(rad)
+
+drawing_tasks = [draw_square, draw_axes, draw_cartoon, draw_n_figure, draw_random_walk, draw_spirograph]
+# drawing_tasks = [draw_spirograph]
 
 turtle_setup()
 drawing_tasks[0]()
